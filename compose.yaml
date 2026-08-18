@@ -1,0 +1,25 @@
+services:
+  journal:
+    build: .
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_PATH: /data/journal.sqlite
+      MCP_TOKENS: ${MCP_TOKENS:-codex:local-codex-token}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,journal}
+    ports:
+      - "${JOURNAL_PORT:-3000}:3000"
+    volumes:
+      - journal-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  journal-data:
