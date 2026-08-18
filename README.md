@@ -14,6 +14,8 @@ curl http://127.0.0.1:3000/healthz
 
 The local default MCP endpoint is `http://127.0.0.1:3000/mcp` and its development bearer token is `local-codex-token`. Copy `.env.example` to `.env` and replace the credentials before exposing the service beyond your machine.
 
+For a production Swarm deployment behind Traefik, follow the [production deployment runbook](./deploy/README.md). It uses GHCR release images, local SQLite storage pinned to one node, and a Docker secret for MCP credentials.
+
 Run the included end-to-end client against the container:
 
 ```sh
@@ -80,6 +82,7 @@ Configuration:
 | `PORT` | `3000` | Listen port |
 | `DATABASE_PATH` | `./data/journal.sqlite` | Live SQLite path |
 | `MCP_TOKENS` | `codex:local-codex-token` | Comma-separated `agent:token` credentials |
+| `MCP_TOKENS_FILE` | unset | File containing `agent:token` credentials; mutually exclusive with `MCP_TOKENS` |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Host and browser-origin allowlist |
 
 ## Current scope
