@@ -1,6 +1,6 @@
 # Production deployment runbook
 
-This runbook publishes a versioned image to GitHub Container Registry and deploys one Project Journal replica to Docker Swarm behind Traefik. SQLite remains on local storage belonging to a labelled Swarm node. MCP credentials are mounted as a Docker secret.
+This runbook publishes a versioned image to Docker Hub and deploys one Project Journal replica to Docker Swarm behind Traefik. SQLite remains on local storage belonging to a labelled Swarm node. MCP credentials are mounted as a Docker secret.
 
 ## Prerequisites
 
@@ -8,14 +8,20 @@ This runbook publishes a versioned image to GitHub Container Registry and deploy
 - A running Traefik service using an attachable overlay network
 - DNS for the journal hostname pointing to Traefik
 - A valid Traefik TLS certificate resolver
-- A GitHub account or token with permission to pull the GHCR package
+- A Docker Hub repository named `mergelog`
+- A Docker Hub personal access token with read/write permission for CI
 - Local storage on the selected Swarm node
 
 Commands using `docker node`, `docker secret`, and `docker stack` must run on a Swarm manager.
 
 ## 1. Publish a release image
 
-The `Build and publish container` GitHub workflow runs for semantic version tags. It builds and tests the application before publishing GHCR tags for the release and commit SHA.
+The `Build and publish Docker image` GitHub workflow runs for semantic version tags. It builds and tests the application before publishing Docker Hub tags for the release and commit SHA.
+
+Configure these settings under **GitHub repository → Settings → Secrets and variables → Actions**:
+
+- Variable `DOCKERHUB_NAMESPACE`: your Docker Hub username or organization namespace
+- Secret `DOCKERHUB_TOKEN`: a Docker Hub personal access token with permission to push the `mergelog` repository
 
 From a clean, current `main` branch:
 
@@ -33,7 +39,7 @@ git push origin v0.1.0
 Wait for the GitHub workflow to complete, then use the immutable release tag or the published digest:
 
 ```text
-ghcr.io/turtlewareau/mergelog:0.1.0
+docker.io/YOUR_DOCKERHUB_NAMESPACE/mergelog:0.1.0
 ```
 
 Do not deploy `latest`; the publishing workflow intentionally does not create it.
@@ -95,7 +101,7 @@ cp deploy/.env.example deploy/.env
 Set at least:
 
 ```dotenv
-MERGELOG_IMAGE=ghcr.io/turtlewareau/mergelog:0.1.0
+MERGELOG_IMAGE=docker.io/YOUR_DOCKERHUB_NAMESPACE/mergelog:0.1.0
 MERGELOG_HOSTNAME=journal.example.com
 MERGELOG_DATA_PATH=/mnt/docker/mergelog
 MERGELOG_TOKEN_SECRET=mergelog_mcp_tokens_v1
@@ -113,12 +119,12 @@ set +a
 docker stack config --compose-file deploy/stack.yaml
 ```
 
-## 6. Authenticate to GHCR
+## 6. Authenticate to Docker Hub
 
-If the package is private, authenticate with a GitHub token that can read packages:
+If the repository is private or subject to authenticated pull limits, authenticate with a Docker Hub personal access token that can read it:
 
 ```sh
-printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
+printf '%s' "$DOCKERHUB_TOKEN" | docker login --username DOCKERHUB_USERNAME --password-stdin
 ```
 
 ## 7. Deploy
