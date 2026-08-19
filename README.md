@@ -12,7 +12,7 @@ docker compose ps
 curl http://127.0.0.1:3000/healthz
 ```
 
-The local default MCP endpoint is `http://127.0.0.1:3000/mcp` and its development bearer token is `local-codex-token`. Copy `.env.example` to `.env` and replace the credentials before exposing the service beyond your machine.
+Open the read-only Strata journal at `http://127.0.0.1:3000/`. The local default MCP endpoint is `http://127.0.0.1:3000/mcp` and its development bearer token is `local-codex-token`. Copy `.env.example` to `.env`, replace the credentials, and add the LAN hostname or IP you will use to `ALLOWED_HOSTS` before exposing the service beyond your machine.
 
 Run the included end-to-end client against the container:
 
@@ -81,6 +81,7 @@ Configuration:
 | `DATABASE_PATH` | `./data/journal.sqlite` | Live SQLite path |
 | `MCP_TOKENS` | `codex:local-codex-token` | Comma-separated `agent:token` credentials |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Host and browser-origin allowlist |
+| `WEB_DIST_PATH` | `./web/dist` | Compiled Strata frontend served by the application |
 
 ## Current scope
 

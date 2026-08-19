@@ -244,7 +244,11 @@ export class JournalDatabase {
       WHERE ${clauses.join(' AND ')} ORDER BY m.created_at DESC LIMIT ?
     `).all(...params) as Row[];
     return {
-      project: { slug: project.slug, name: project.name },
+      project: {
+        slug: project.slug,
+        name: project.name,
+        repositories: (this.db.prepare('SELECT normalized_name FROM repositories WHERE project_id = ? ORDER BY normalized_name').all(project.id as string) as Row[]).map((row) => row.normalized_name),
+      },
       entries: rows.map((row) => ({
         threadId: row.thread_id, repository: row.repository, prNumber: row.pr_number, prUrl: row.pr_url,
         title: row.title, mergeSha: row.merge_sha, mergedAt: row.merged_at, mergeStatus: row.merge_status,

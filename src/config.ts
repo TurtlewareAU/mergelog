@@ -8,6 +8,7 @@ export interface Config {
   databasePath: string;
   tokens: Map<string, Agent>;
   allowedHosts: string[];
+  webDistPath: string;
 }
 
 function parseTokens(value: string): Map<string, Agent> {
@@ -37,6 +38,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     host: env.HOST ?? '0.0.0.0',
     port,
     databasePath: resolve(env.DATABASE_PATH ?? './data/journal.sqlite'),
+    webDistPath: resolve(env.WEB_DIST_PATH ?? './web/dist'),
     tokens: parseTokens(env.MCP_TOKENS ?? 'codex:local-codex-token'),
     allowedHosts: (env.ALLOWED_HOSTS ?? 'localhost,127.0.0.1,[::1]')
       .split(',')
