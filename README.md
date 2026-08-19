@@ -90,4 +90,4 @@ Configuration:
 
 ## Current scope
 
-This working copy implements storage and the initial MCP contract. Timeline UI, deterministic Markdown export, scheduled validated backups, NFS retention, and Swarm deployment remain later phases from the plan.
+This working copy implements storage, the initial MCP contract, the read-only timeline UI, and a production Swarm deployment path. Deterministic Markdown export, scheduled validated backups, and NFS retention remain later phases from the plan.
