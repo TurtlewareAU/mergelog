@@ -49,13 +49,18 @@ while (( SECONDS < deadline )); do
   update_state="$(docker service inspect --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' "${service_name}")"
 
   if [[ "${replicas}" == "1/1" && ( -z "${update_state}" || "${update_state}" == "completed" ) ]]; then
-    curl --fail --show-error --silent --retry 5 --retry-all-errors \
-      "https://${MERGELOG_HOSTNAME}/healthz" >/dev/null
-    echo "Deployment completed: ${MERGELOG_IMAGE}"
-    exit 0
+    if curl --fail --show-error --silent \
+      --connect-timeout 5 \
+      --max-time 10 \
+      "https://${MERGELOG_HOSTNAME}/healthz" >/dev/null; then
+      echo "Deployment completed: ${MERGELOG_IMAGE}"
+      exit 0
+    fi
   fi
 
-  if [[ "${update_state}" == "paused" || "${update_state}" == "rollback_paused" ]]; then
+  if [[ "${update_state}" == "paused" || \
+    "${update_state}" == "rollback_paused" || \
+    "${update_state}" == "rollback_completed" ]]; then
     echo "Deployment entered failure state: ${update_state}" >&2
     docker service ps --no-trunc "${service_name}" >&2
     exit 1

@@ -16,6 +16,7 @@ env:
 jobs:
   publish:
     name: Build and publish
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, swarm]
     permissions:
       contents: read
@@ -68,6 +69,7 @@ jobs:
   deploy:
     name: Deploy to production
     needs: publish
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, swarm]
     environment:
       name: production
@@ -75,7 +77,7 @@ jobs:
     permissions:
       contents: read
     env:
-      MERGELOG_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.publish.outputs.digest }}
+      MERGELOG_IMAGE: docker.io/${{ vars.DOCKERHUB_NAMESPACE }}/mergelog@${{ needs.publish.outputs.digest }}
       MERGELOG_HOSTNAME: ${{ vars.MERGELOG_HOSTNAME }}
       MERGELOG_DATA_PATH: ${{ vars.MERGELOG_DATA_PATH }}
       MERGELOG_TOKEN_SECRET: ${{ vars.MERGELOG_TOKEN_SECRET }}
