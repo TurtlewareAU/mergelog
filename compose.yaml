@@ -8,6 +8,7 @@ services:
       DATABASE_PATH: /data/journal.sqlite
       MCP_TOKENS: ${MCP_TOKENS:-codex:local-codex-token}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,journal}
+      WEB_DIST_PATH: /app/web/dist
     ports:
       - "${JOURNAL_PORT:-3000}:3000"
     volumes:

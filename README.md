@@ -12,7 +12,7 @@ docker compose ps
 curl http://127.0.0.1:3000/healthz
 ```
 
-The local default MCP endpoint is `http://127.0.0.1:3000/mcp` and its development bearer token is `local-codex-token`. Copy `.env.example` to `.env` and replace the credentials before exposing the service beyond your machine.
+Open the read-only Strata journal at `http://127.0.0.1:3000/`. The local default MCP endpoint is `http://127.0.0.1:3000/mcp` and its development bearer token is `local-codex-token`. Copy `.env.example` to `.env`, replace the credentials, and add the LAN hostname or IP you will use to `ALLOWED_HOSTS` before exposing the service beyond your machine.
 
 For a production Swarm deployment behind Traefik, follow the [production deployment runbook](./deploy/README.md). It uses versioned Docker Hub images, local SQLite storage pinned to one node, and a Docker secret for MCP credentials.
 
@@ -65,12 +65,14 @@ The copy command is convenient for local testing, but a production backup must u
 
 ## Local development
 
-Requires Node.js 22 or newer (Node 24 is used in Docker):
+Requires Node.js `^20.19.0` or `>=22.12.0` (Node 24 is used in Docker):
 
 ```sh
 npm install
 npm test
 npm run build
+npm --prefix web install
+npm --prefix web run build
 MCP_TOKENS=codex:local-codex-token npm start
 ```
 
@@ -84,6 +86,7 @@ Configuration:
 | `MCP_TOKENS` | `codex:local-codex-token` | Comma-separated `agent:token` credentials |
 | `MCP_TOKENS_FILE` | unset | File containing `agent:token` credentials; mutually exclusive with `MCP_TOKENS` |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Host and browser-origin allowlist |
+| `WEB_DIST_PATH` | `./web/dist` | Compiled Strata frontend served by the application |
 
 ## Current scope
 
