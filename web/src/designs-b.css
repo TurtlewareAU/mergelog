@@ -20,13 +20,13 @@
 .health-row i.warn{background:#ff8a6b;box-shadow:0 0 0 3px rgba(255,138,107,.15)}
 .strata-main{padding:52px 4.4vw 80px;max-width:1180px}
 .strata-head{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;padding-bottom:34px;border-bottom:1px solid rgba(255,255,255,.09)}
-.strata-head h1{font:400 clamp(34px,3.6vw,54px)/1.02 'Fraunces';letter-spacing:-.04em;margin:0}
+.strata-head h1{font:400 clamp(34px,3.6vw,54px)/1.02 Fraunces;letter-spacing:-.04em;margin:0}
 .strata-head h1 em{color:#ff8a6b;font-weight:400}
 .strata-actions{display:flex;gap:10px;flex-shrink:0}
 .strata-actions button{border:0;border-radius:6px;padding:11px 17px;font-size:13px;font-weight:500}
 .strata-actions .ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:#c3c8dc}
 .strata-actions .coral{background:#ff8a6b;color:#241a17}
-.app-nav-title{position:absolute;left:50%;transform:translateX(-50%);font:10px 'DM Mono';letter-spacing:.14em;color:#9299b2}.app-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:#75d6a3;margin-right:7px}.app-status{padding:15vh 8vw;max-width:760px}.app-status h1{font:400 clamp(38px,6vw,72px)/1 'Fraunces';margin:20px 0;color:#f0eef8}.app-status p{color:#9299b2;line-height:1.7}.empty-journal{padding:70px 0;color:#9299b2}.empty-journal h2{font:400 30px 'Fraunces';color:#eef0f8}.stratum-meta a.pr{color:inherit;text-decoration:none}.decision{margin-top:10px;padding:10px 14px;border-left:2px solid #8c80db;background:rgba(140,128,219,.1);color:#b9b1ee;font:10px 'DM Mono';letter-spacing:.04em}
+.app-nav-title{position:absolute;left:50%;transform:translateX(-50%);font:10px 'DM Mono';letter-spacing:.14em;color:#9299b2}.app-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:#75d6a3;margin-right:7px}.app-status{padding:15vh 8vw;max-width:760px}.app-status h1{font:400 clamp(38px,6vw,72px)/1 Fraunces;margin:20px 0;color:#f0eef8}.app-status p{color:#9299b2;line-height:1.7}.empty-journal{padding:70px 0;color:#9299b2}.empty-journal h2{font:400 30px Fraunces;color:#eef0f8}.stratum-meta a.pr{color:inherit;text-decoration:none}.decision{margin-top:10px;padding:10px 14px;border-left:2px solid #8c80db;background:rgba(140,128,219,.1);color:#b9b1ee;font:10px 'DM Mono';letter-spacing:.04em}
 .strata-list{display:flex;flex-direction:column}
 .stratum{display:grid;grid-template-columns:104px 2px 1fr 46px;gap:0 22px;padding:30px 0;border-bottom:1px solid rgba(255,255,255,.07);position:relative}
 .stratum-when{font:11px 'DM Mono';color:#9aa0ba;padding-top:2px;text-align:right;line-height:1.7;white-space:nowrap}
@@ -47,7 +47,7 @@
 .stratum-foot{display:flex;align-items:center;gap:11px;margin-top:20px;font-size:12.5px;color:#8a90ad}
 .stratum-foot strong{color:#e4e6f2;font-weight:600}
 .stratum-foot .sha{margin-left:auto;font:11px 'DM Mono';color:#6f758f}
-.stratum-index{font:400 34px 'Fraunces';color:rgba(255,255,255,.06);text-align:right;letter-spacing:-.04em}
+.stratum-index{font:400 34px Fraunces;color:rgba(255,255,255,.06);text-align:right;letter-spacing:-.04em}
 
 /* ── 05 · Ledger ─ warm charcoal-green + chartreuse ──────────────────── */
 .design-five{background:#1c2320;color:#e6ece6}
@@ -75,7 +75,7 @@
 .ledger-thread{padding:44px 5vw 90px;max-width:900px}
 .thread-crumbs{display:flex;gap:8px;font:11px 'DM Mono';color:#8b978f;margin-bottom:16px}
 .thread-crumbs code{color:#c9d3c9}
-.thread-head h1{font:400 clamp(32px,3.4vw,46px)/1.08 'Fraunces';letter-spacing:-.035em;margin:0 0 26px}
+.thread-head h1{font:400 clamp(32px,3.4vw,46px)/1.08 Fraunces;letter-spacing:-.035em;margin:0 0 26px}
 .thread-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding:20px 0;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
 .thread-facts span{display:block;font:9px 'DM Mono';letter-spacing:.16em;color:#7f8c84;margin-bottom:7px}
 .thread-facts b{font:12.5px 'DM Mono';font-weight:400;color:#dbe3db}

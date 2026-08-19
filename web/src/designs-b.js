@@ -31,6 +31,19 @@ export const threads = [
 
 const avatar = (a) => `<span class="avatar avatar-${a.toLowerCase()}">${a === 'Human' ? 'TW' : a[0]}</span>`;
 
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[character]));
+
+function safePrUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return url.protocol === 'https:' ? url.href : '#';
+  } catch {
+    return '#';
+  }
+}
+
 /* ── 04 · Strata ─────────────────────────────────────────────────────────
    Deep indigo slate. A quiet reading surface: repo rail on the left,
    wide stacked strata of merges, coral used only where it means something. */
@@ -57,13 +70,13 @@ export function designFour(nav, data) {
   const latest = rawEntries[0]?.message?.createdAt;
   const dateLabel = latest ? new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(latest)) : 'All history';
   const when = (value) => value ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : 'Reported';
-  const actorName = (value) => value.charAt(0).toUpperCase() + value.slice(1);
+  const actorName = (value) => ({ codex: 'Codex', claude: 'Claude', human: 'Human' })[value] ?? 'Human';
   return `<main class="design design-four">${nav}
   <div class="strata-shell">
     <aside class="strata-rail">
       <div class="rail-block">
         <span class="rail-label">REPOSITORIES</span>
-        <ul class="repo-list">${repos.map(([r, n, on]) => `<li class="${on ? 'on' : ''}"><span>${r}</span><b>${n}</b></li>`).join('') || '<li class="on"><span>No repositories</span><b>0</b></li>'}</ul>
+        <ul class="repo-list">${repos.map(([r, n, on]) => `<li class="${on ? 'on' : ''}"><span>${escapeHtml(r)}</span><b>${escapeHtml(n)}</b></li>`).join('') || '<li class="on"><span>No repositories</span><b>0</b></li>'}</ul>
       </div>
       <div class="rail-block">
         <span class="rail-label">ATTRIBUTED TO</span>
@@ -87,21 +100,21 @@ export function designFour(nav, data) {
           <h1>Merged work, <em>kept in context.</em></h1>
         </div>
         <div class="strata-actions">
-          <button class="ghost">${dateLabel} ⌄</button>
+          <button class="ghost">${escapeHtml(dateLabel)} ⌄</button>
           <button class="coral">Export Markdown ↓</button>
         </div>
       </header>
       <div class="strata-list">
         ${displayThreads.map((t, i) => { const message = t.messages[0]; const stamp = live ? when(message.createdAt).split(', ') : threads[i]?.time.split(','); const followUps = t.messages.flatMap((item) => item.followUps ?? []); const decisions = t.messages.flatMap((item) => item.decisions ?? []); const actor = actorName(message.actor); return `<article class="stratum">
-          <div class="stratum-when"><b>${live ? stamp[0] : stamp[0]}</b><small>${live ? (stamp[1] ?? '') : (stamp[1] || '').trim()}</small></div>
+          <div class="stratum-when"><b>${escapeHtml(stamp[0])}</b><small>${escapeHtml(live ? (stamp[1] ?? '') : (stamp[1] || '').trim())}</small></div>
           <div class="stratum-edge"></div>
           <div class="stratum-body">
-            <div class="stratum-meta"><code>${t.repository}</code><a class="pr" href="${t.prUrl}" target="_blank" rel="noreferrer">#${t.prNumber}</a>${decisions[0] ? `<span class="chip chip-decision">decision</span>` : ''}<span class="merged">${t.mergeStatus === 'reported' ? 'reported merged' : t.mergeStatus}</span></div>
-            <h2>${t.title}</h2>
-            <p>${message.summary}</p>
-            ${decisions.map((item) => `<div class="decision">DECISION · ${item}</div>`).join('')}
-            ${followUps.map((item) => `<div class="followup">FOLLOW-UP · ${item}</div>`).join('')}
-            <div class="stratum-foot">${avatar(actor)}<strong>${actor}</strong><span>${t.messages.length} ${t.messages.length === 1 ? 'note' : 'notes'} on thread</span><span class="sha">${t.mergeSha ?? 'SHA pending'}</span></div>
+            <div class="stratum-meta"><code>${escapeHtml(t.repository)}</code><a class="pr" href="${escapeHtml(safePrUrl(t.prUrl))}" target="_blank" rel="noreferrer">#${escapeHtml(t.prNumber)}</a>${decisions[0] ? `<span class="chip chip-decision">decision</span>` : ''}<span class="merged">${escapeHtml(t.mergeStatus === 'reported' ? 'reported merged' : t.mergeStatus)}</span></div>
+            <h2>${escapeHtml(t.title)}</h2>
+            <p>${escapeHtml(message.summary)}</p>
+            ${decisions.map((item) => `<div class="decision">DECISION · ${escapeHtml(item)}</div>`).join('')}
+            ${followUps.map((item) => `<div class="followup">FOLLOW-UP · ${escapeHtml(item)}</div>`).join('')}
+            <div class="stratum-foot">${avatar(actor)}<strong>${escapeHtml(actor)}</strong><span>${escapeHtml(t.messages.length)} ${t.messages.length === 1 ? 'note' : 'notes'} on thread</span><span class="sha">${escapeHtml(t.mergeSha ?? 'SHA pending')}</span></div>
           </div>
           <div class="stratum-index">${String(displayThreads.length - i).padStart(2, '0')}</div>
         </article>` }).join('') || '<div class="empty-journal"><h2>No journal entries yet.</h2><p>The first recorded pull request will appear here.</p></div>'}

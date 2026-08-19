@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export type Agent = 'codex' | 'claude' | 'human';
@@ -33,13 +34,24 @@ function parseTokens(value: string): Map<string, Agent> {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const port = Number(env.PORT ?? '3000');
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be a valid TCP port');
+  if (env.MCP_TOKENS && env.MCP_TOKENS_FILE) throw new Error('Set only one of MCP_TOKENS or MCP_TOKENS_FILE');
+
+  let tokenValue = env.MCP_TOKENS ?? 'codex:local-codex-token';
+  if (env.MCP_TOKENS_FILE) {
+    try {
+      tokenValue = readFileSync(resolve(env.MCP_TOKENS_FILE), 'utf8').trim();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Unable to read MCP_TOKENS_FILE: ${message}`);
+    }
+  }
 
   return {
     host: env.HOST ?? '0.0.0.0',
     port,
     databasePath: resolve(env.DATABASE_PATH ?? './data/journal.sqlite'),
     webDistPath: resolve(env.WEB_DIST_PATH ?? './web/dist'),
-    tokens: parseTokens(env.MCP_TOKENS ?? 'codex:local-codex-token'),
+    tokens: parseTokens(tokenValue),
     allowedHosts: (env.ALLOWED_HOSTS ?? 'localhost,127.0.0.1,[::1]')
       .split(',')
       .map((host) => host.trim())

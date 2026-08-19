@@ -69,7 +69,13 @@ async function serveWebAsset(pathname: string, response: import('node:http').Ser
 }
 
 const httpServer = createServer(async (request, response) => {
-  const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+  let url: URL;
+  try {
+    url = new URL(request.url ?? '/', 'http://localhost');
+  } catch {
+    json(response, 400, { error: 'invalid_request_target' });
+    return;
+  }
   if (url.pathname === '/healthz') {
     json(response, 200, { status: 'ok' });
     return;
