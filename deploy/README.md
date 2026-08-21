@@ -1,6 +1,6 @@
 # Production deployment runbook
 
-This runbook publishes a versioned image to Docker Hub and deploys one Project Journal replica to Docker Swarm behind Traefik. SQLite remains on local storage belonging to a labelled Swarm node. MCP credentials are mounted as a Docker secret.
+This runbook publishes a versioned image to Docker Hub and deploys one Project Journal replica to Docker Swarm behind Traefik. A GitHub Actions runner on a Swarm manager performs the deployment automatically after the image is published. SQLite remains on local storage belonging to a labelled Swarm node. MCP credentials are mounted as a Docker secret.
 
 ## Prerequisites
 
@@ -11,40 +11,48 @@ This runbook publishes a versioned image to Docker Hub and deploys one Project J
 - A Docker Hub repository named `mergelog`
 - A Docker Hub personal access token with read/write permission for CI
 - Local storage on the selected Swarm node
+- Self-hosted GitHub Actions runners labelled `pve` for pull-request checks
+- A self-hosted GitHub Actions runner installed on each eligible Swarm manager and labelled `swarm`
+- Docker and `curl` available to the runner account
 
 Commands using `docker node`, `docker secret`, and `docker stack` must run on a Swarm manager.
 
-## 1. Publish a release image
+## 1. Configure GitHub Actions
 
-The `Build and publish Docker image` GitHub workflow runs for semantic version tags. It builds and tests the application before publishing Docker Hub tags for the release and commit SHA.
+Create a GitHub environment named `production`. Add protection rules or required reviewers if deployments should wait for approval.
 
 Configure these settings under **GitHub repository → Settings → Secrets and variables → Actions**:
 
 - Variable `DOCKERHUB_NAMESPACE`: your Docker Hub username or organization namespace
 - Secret `DOCKERHUB_TOKEN`: a Docker Hub personal access token with permission to push the `mergelog` repository
+- Variable `MERGELOG_HOSTNAME`: public hostname, such as `journal.example.com`
+- Variable `MERGELOG_DATA_PATH`: absolute data directory on the storage node
+- Variable `MERGELOG_TOKEN_SECRET`: existing Docker secret name
+- Variable `TRAEFIK_NETWORK`: external Traefik overlay network
+- Variable `TRAEFIK_ENTRYPOINT`: Traefik HTTPS entrypoint
+- Variable `TRAEFIK_CERT_RESOLVER`: Traefik certificate resolver
 
-From a clean, current `main` branch:
+Scope the deployment variables to the `production` environment. Keep `DOCKERHUB_NAMESPACE` and `DOCKERHUB_TOKEN` at repository scope because the publish job runs before the production environment job.
 
-```sh
-git switch main
-git pull --ff-only
-npm ci
-npm run build
-npm test
+The runners are part of the repository trust boundary and can execute pull-request code. Use dedicated machines or runner accounts, restrict repository access, and do not attach the `pve` or `swarm` labels to unrelated runners. All runners must be able to invoke Docker without an interactive privilege prompt, and every `swarm` runner eligible for deployment must be a Swarm manager.
 
-git tag -a v0.1.0 -m "Project Journal v0.1.0"
-git push origin v0.1.0
-```
+Run the manual `PVE runner preflight` workflow after adding or changing runners. It starts three parallel jobs against the shared `pve` label and reports the runner name and installed tooling. With all three runners idle, GitHub will normally distribute those jobs across them. If each physical host must be tested deterministically, add unique labels such as `pve1`, `pve2`, and `pve3` and change the workflow matrix to select those labels.
 
-Wait for the GitHub workflow to complete, then use the immutable release tag or the published digest:
+## 2. Validate, publish, and deploy
+
+Pull requests run the application build, unit tests, web build, and a real container health/authentication check on a `pve` runner. A merge to `main` runs the publish job on a `swarm` runner, publishes `latest` and `sha-COMMIT` tags, then deploys the immutable image digest on a `swarm` runner. The production concurrency group prevents deployments from overlapping.
+
+Before merging the first deployment change to `main`, complete the storage, network, and secret preparation in sections 3–5 below.
+
+Open a pull request into `main` and require the `Pull request checks` workflow in the branch protection rules. After it passes, merge the pull request and wait for both jobs in `Publish and deploy container` to complete. The deployed image is pinned to the digest produced by the publish job rather than the mutable `latest` tag.
 
 ```text
-docker.io/YOUR_DOCKERHUB_NAMESPACE/mergelog:0.1.0
+docker.io/YOUR_DOCKERHUB_NAMESPACE/mergelog:sha-COMMIT
 ```
 
-Do not deploy `latest`; the publishing workflow intentionally does not create it.
+The workflow publishes `latest` for convenience, but deployment always uses the immutable digest.
 
-## 2. Prepare the storage node
+## 3. Prepare the storage node
 
 Choose the node that will own the live SQLite database:
 
@@ -61,7 +69,7 @@ sudo install -d -o 1000 -g 1000 -m 0750 /mnt/docker/mergelog
 
 Do not place the live database on NFS. Backups may be copied off-node after using a SQLite-aware snapshot process.
 
-## 3. Confirm the Traefik network
+## 4. Confirm the Traefik network
 
 Find the overlay network shared by Traefik services:
 
@@ -71,7 +79,7 @@ docker network ls --filter driver=overlay
 
 The default expected by the stack is `traefik-public`. If yours differs, set `TRAEFIK_NETWORK` in the deployment environment.
 
-## 4. Create the MCP token secret
+## 5. Create the MCP token secret
 
 Generate a 32-byte token and save it in a password manager. On the Swarm manager, read that saved value without echoing it and create the versioned secret:
 
@@ -90,9 +98,9 @@ codex:LONG_CODEX_TOKEN,claude:LONG_CLAUDE_TOKEN
 
 Swarm secrets are immutable. Rotate credentials by creating a new versioned secret, updating `MERGELOG_TOKEN_SECRET`, deploying the stack, verifying it, and only then removing the old secret.
 
-## 5. Configure the deployment
+## 6. Configure a manual deployment
 
-Copy the example without committing the resulting file:
+The automated workflow receives its configuration from GitHub Actions variables. For a manual deployment or local validation on the Swarm manager, copy the example without committing the resulting file:
 
 ```sh
 cp deploy/.env.example deploy/.env
@@ -119,7 +127,7 @@ set +a
 docker stack config --compose-file deploy/stack.yaml
 ```
 
-## 6. Authenticate to Docker Hub
+## 7. Authenticate to Docker Hub
 
 If the repository is private or subject to authenticated pull limits, authenticate with a Docker Hub personal access token that can read it:
 
@@ -127,21 +135,17 @@ If the repository is private or subject to authenticated pull limits, authentica
 printf '%s' "$DOCKERHUB_TOKEN" | docker login --username DOCKERHUB_USERNAME --password-stdin
 ```
 
-## 7. Deploy
+## 8. Deploy manually
 
-With the deployment variables still exported:
+With the deployment variables still exported, use the same checked-in script as CI:
 
 ```sh
-docker stack deploy \
-  --with-registry-auth \
-  --resolve-image always \
-  --compose-file deploy/stack.yaml \
-  mergelog
+./deploy/deploy.sh
 ```
 
 The stack deliberately uses one replica, a storage-node placement constraint, and `stop-first` updates. Those settings prevent two application processes from writing to the same SQLite database.
 
-## 8. Verify
+## 9. Verify
 
 Check scheduling, convergence, and logs:
 
@@ -176,7 +180,7 @@ npm run test:mcp
 
 The smoke test creates a persistent `smoke-*` project and PR note.
 
-## 9. Connect Codex
+## 10. Connect Codex
 
 Make the same Codex token available to the process that launches Codex:
 

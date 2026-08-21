@@ -1,44 +1,27 @@
-name: Build and publish Docker image
+name: Publish and deploy container
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: mergelog-production-pipeline
+  cancel-in-progress: false
 
 env:
   REGISTRY: docker.io
   IMAGE_NAME: ${{ vars.DOCKERHUB_NAMESPACE }}/mergelog
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Test
-        run: npm test
-
   publish:
-    needs: test
-    runs-on: ubuntu-latest
+    name: Build and publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, swarm]
     permissions:
       contents: read
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -58,18 +41,17 @@ jobs:
           username: ${{ vars.DOCKERHUB_NAMESPACE }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
       - name: Extract image metadata
         id: metadata
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
             type=sha,prefix=sha-
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build and push image
         id: build
@@ -83,3 +65,35 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to production
+    needs: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, swarm]
+    environment:
+      name: production
+      url: https://${{ vars.MERGELOG_HOSTNAME }}
+    permissions:
+      contents: read
+    env:
+      MERGELOG_IMAGE: docker.io/${{ vars.DOCKERHUB_NAMESPACE }}/mergelog@${{ needs.publish.outputs.digest }}
+      MERGELOG_HOSTNAME: ${{ vars.MERGELOG_HOSTNAME }}
+      MERGELOG_DATA_PATH: ${{ vars.MERGELOG_DATA_PATH }}
+      MERGELOG_TOKEN_SECRET: ${{ vars.MERGELOG_TOKEN_SECRET }}
+      TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK }}
+      TRAEFIK_ENTRYPOINT: ${{ vars.TRAEFIK_ENTRYPOINT }}
+      TRAEFIK_CERT_RESOLVER: ${{ vars.TRAEFIK_CERT_RESOLVER }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ vars.DOCKERHUB_NAMESPACE }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Deploy and verify
+        run: ./deploy/deploy.sh
