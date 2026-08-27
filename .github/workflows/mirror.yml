@@ -34,13 +34,13 @@ jobs:
           MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
         run: |
           mirror_work_dir="$(mktemp -d)"
+          echo "MIRROR_WORK_DIR=$mirror_work_dir" >> "$GITHUB_ENV"
           key_path="${mirror_work_dir}/deploy-key"
           known_hosts_path="${mirror_work_dir}/known-hosts"
           printf '%s\n' "$MIRROR_SSH_PRIVATE_KEY" > "$key_path"
           chmod 600 "$key_path"
-          ssh-keyscan github.com > "$known_hosts_path"
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$known_hosts_path"
           chmod 600 "$known_hosts_path"
-          echo "MIRROR_WORK_DIR=$mirror_work_dir" >> "$GITHUB_ENV"
           echo "GIT_SSH_COMMAND=ssh -i $key_path -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$known_hosts_path" >> "$GITHUB_ENV"
 
       - name: Mirror branches and tags
