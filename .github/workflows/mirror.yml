@@ -2,14 +2,12 @@ name: Mirror to personal repository
 
 on:
   push:
-    branches:
-      - "**"
-    tags:
-      - "**"
+    branches: ['**']
+    tags: ['**']
   delete:
   workflow_dispatch:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -20,18 +18,30 @@ concurrency:
 
 jobs:
   mirror:
-    #runs-on: ubuntu-latest
+    name: Mirror branches and tags
     runs-on: [self-hosted, Linux, X64, pve]
-
     steps:
+      - name: Validate mirror configuration
+        env:
+          MIRROR_REPOSITORY: ${{ vars.MIRROR_REPOSITORY }}
+          MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
+        run: |
+          test -n "$MIRROR_REPOSITORY" || { echo "Missing repository variable: MIRROR_REPOSITORY"; exit 1; }
+          test -n "$MIRROR_SSH_PRIVATE_KEY" || { echo "Missing repository secret: MIRROR_SSH_PRIVATE_KEY"; exit 1; }
+
       - name: Configure mirror SSH key
         env:
           MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
         run: |
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$MIRROR_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
-          chmod 600 "$HOME/.ssh/id_ed25519"
-          ssh-keyscan github.com >> "$HOME/.ssh/known_hosts"
+          mirror_work_dir="$(mktemp -d)"
+          echo "MIRROR_WORK_DIR=$mirror_work_dir" >> "$GITHUB_ENV"
+          key_path="${mirror_work_dir}/deploy-key"
+          known_hosts_path="${mirror_work_dir}/known-hosts"
+          printf '%s\n' "$MIRROR_SSH_PRIVATE_KEY" > "$key_path"
+          chmod 600 "$key_path"
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$known_hosts_path"
+          chmod 600 "$known_hosts_path"
+          echo "GIT_SSH_COMMAND=ssh -i $key_path -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$known_hosts_path" >> "$GITHUB_ENV"
 
       - name: Mirror branches and tags
         env:
@@ -40,6 +50,15 @@ jobs:
           GIT_CONFIG_GLOBAL: /dev/null
           GIT_CONFIG_NOSYSTEM: 1
         run: |
-          git clone --bare \
-          "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-          "$mirror_path"
+          mirror_path="${MIRROR_WORK_DIR}/source.git"
+          git clone --bare "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$mirror_path"
+          git -C "$mirror_path" push --force --prune "git@github.com:${MIRROR_REPOSITORY}.git" \
+            'refs/heads/*:refs/heads/*' \
+            'refs/tags/*:refs/tags/*'
+
+      - name: Remove temporary mirror files
+        if: always()
+        run: |
+          test -n "$MIRROR_WORK_DIR" || exit 0
+          test -d "$MIRROR_WORK_DIR" || exit 0
+          rm -rf -- "$MIRROR_WORK_DIR"
