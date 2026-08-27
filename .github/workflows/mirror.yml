@@ -35,10 +35,11 @@ jobs:
 
       - name: Mirror branches and tags
         env:
-          SOURCE_URL: https://github.com/TurtlewareAU/mergelog.git
-          DESTINATION_URL: git@github.com:YOUR_USERNAME/mergelog.git
+          GITHUB_TOKEN: ${{ github.token }}
+          MIRROR_REPOSITORY: ${{ vars.MIRROR_REPOSITORY }}
+          GIT_CONFIG_GLOBAL: /dev/null
+          GIT_CONFIG_NOSYSTEM: 1
         run: |
-          git clone --bare "$SOURCE_URL" source.git
-          git -C source.git push --force --prune "$DESTINATION_URL" \
-            'refs/heads/*:refs/heads/*' \
-            'refs/tags/*:refs/tags/*'
+          git clone --bare \
+          "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+          "$mirror_path"
