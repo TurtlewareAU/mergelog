@@ -1,0 +1,44 @@
+name: Mirror to personal repository
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "**"
+  delete:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-repository-mirror
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    #runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, pve]
+
+    steps:
+      - name: Configure mirror SSH key
+        env:
+          MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$MIRROR_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          ssh-keyscan github.com >> "$HOME/.ssh/known_hosts"
+
+      - name: Mirror branches and tags
+        env:
+          SOURCE_URL: https://github.com/TurtlewareAU/mergelog.git
+          DESTINATION_URL: git@github.com:YOUR_USERNAME/mergelog.git
+        run: |
+          git clone --bare "$SOURCE_URL" source.git
+          git -C source.git push --force --prune "$DESTINATION_URL" \
+            'refs/heads/*:refs/heads/*' \
+            'refs/tags/*:refs/tags/*'
