@@ -18,6 +18,11 @@ test('loads agent tokens from a secret file', () => {
   }
 });
 
+test('supports a separately attributed OpenCode token', () => {
+  const config = loadConfig({ MCP_TOKENS: 'opencode:a-long-opencode-token' });
+  assert.equal(config.tokens.get('a-long-opencode-token'), 'opencode');
+});
+
 test('rejects ambiguous inline and file token configuration', () => {
   assert.throws(
     () => loadConfig({ MCP_TOKENS: 'codex:inline-token', MCP_TOKENS_FILE: '/run/secrets/mcp_tokens' }),

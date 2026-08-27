@@ -65,12 +65,12 @@ export function designFour(nav, data) {
   const displayThreads = [...grouped.values()];
   const repositories = [...new Set((journal?.project?.repositories ?? data?.projects?.flatMap((p) => p.repositories) ?? displayThreads.map((t) => t.repository)))];
   const repos = repositories.map((repo, index) => [repo, displayThreads.filter((t) => t.repository === repo).length, index === 0]);
-  const actorCounts = { codex: 0, claude: 0, human: 0 };
+  const actorCounts = { codex: 0, claude: 0, opencode: 0, human: 0 };
   rawEntries.forEach((entry) => { if (entry.message.actor in actorCounts) actorCounts[entry.message.actor] += 1; });
   const latest = rawEntries[0]?.message?.createdAt;
   const dateLabel = latest ? new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(latest)) : 'All history';
   const when = (value) => value ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : 'Reported';
-  const actorName = (value) => ({ codex: 'Codex', claude: 'Claude', human: 'Human' })[value] ?? 'Human';
+  const actorName = (value) => ({ codex: 'Codex', claude: 'Claude', opencode: 'OpenCode', human: 'Human' })[value] ?? 'Human';
   return `<main class="design design-four">${nav}
   <div class="strata-shell">
     <aside class="strata-rail">
@@ -83,14 +83,15 @@ export function designFour(nav, data) {
         <ul class="actor-list">
           <li>${avatar('Codex')}<span>Codex</span><b>${live ? actorCounts.codex : 14}</b></li>
           <li>${avatar('Claude')}<span>Claude</span><b>${live ? actorCounts.claude : 7}</b></li>
+          <li>${avatar('OpenCode')}<span>OpenCode</span><b>${live ? actorCounts.opencode : 0}</b></li>
           <li>${avatar('Human')}<span>Humans</span><b>${live ? actorCounts.human : 3}</b></li>
         </ul>
       </div>
       <div class="rail-block rail-health">
         <span class="rail-label">DURABILITY</span>
-        <div class="health-row"><i class="ok"></i>SQLite · WAL</div>
-        <div class="health-row"><i class="ok"></i>Snapshot 09:00</div>
-        <div class="health-row"><i class="warn"></i>1 follow-up open</div>
+        <div class="health-row"><i class="ok"></i>PostgreSQL</div>
+        <div class="health-row"><i class="ok"></i>Managed storage</div>
+        <div class="health-row"><i class="warn"></i>${displayThreads.flatMap((thread) => thread.messages).flatMap((message) => message.followUps ?? []).length} follow-ups</div>
       </div>
     </aside>
     <section class="strata-main">

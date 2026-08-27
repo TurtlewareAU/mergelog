@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
-import type { Agent } from './config.js';
-import { JournalDatabase } from './database.js';
+import { agents, type Agent } from './config.js';
+import type { JournalStore } from './store.js';
 
 const slug = z.string().min(2).max(64).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 const shortText = z.string().trim().min(1).max(500);
@@ -16,21 +16,21 @@ function failure(error: unknown) {
   return { isError: true, content: [{ type: 'text' as const, text: message }] };
 }
 
-export function buildMcpServer(database: JournalDatabase, actor: Agent): McpServer {
+export function buildMcpServer(database: JournalStore, actor: Agent): McpServer {
   const server = new McpServer({ name: 'project-journal', version: '0.1.0' }, { capabilities: { tools: {} } });
 
   server.registerTool('project_create', {
     title: 'Create project',
     description: 'Create a journal project and attach its GitHub repositories.',
     inputSchema: z.object({ slug, name: shortText, repositories: z.array(z.string().min(3).max(300)).min(1).max(20) }),
-  }, async (input) => { try { return result(database.createProject(input, actor)); } catch (error) { return failure(error); } });
+  }, async (input) => { try { return result(await database.createProject(input, actor)); } catch (error) { return failure(error); } });
 
   server.registerTool('project_list', {
     title: 'List projects',
     description: 'List journal projects and their attached GitHub repositories.',
     inputSchema: z.object({}),
     annotations: { readOnlyHint: true },
-  }, async () => result({ projects: database.listProjects() }));
+  }, async () => result({ projects: await database.listProjects() }));
 
   server.registerTool('pr_update_record', {
     title: 'Record PR update',
@@ -48,7 +48,7 @@ export function buildMcpServer(database: JournalDatabase, actor: Agent): McpServ
       followUps: notes,
       idempotencyKey: z.string().min(8).max(200),
     }),
-  }, async (input) => { try { return result(database.recordPrUpdate(input, actor)); } catch (error) { return failure(error); } });
+  }, async (input) => { try { return result(await database.recordPrUpdate(input, actor)); } catch (error) { return failure(error); } });
 
   server.registerTool('pr_message_amend', {
     title: 'Amend PR message',
@@ -61,7 +61,7 @@ export function buildMcpServer(database: JournalDatabase, actor: Agent): McpServ
       reason: z.string().trim().min(3).max(500),
     }),
   }, async ({ messageId, summary, decisions, followUps, reason }) => {
-    try { return result(database.amendMessage(messageId, summary, decisions, followUps, reason, actor)); } catch (error) { return failure(error); }
+    try { return result(await database.amendMessage(messageId, summary, decisions, followUps, reason, actor)); } catch (error) { return failure(error); }
   });
 
   server.registerTool('project_journal_get', {
@@ -71,11 +71,11 @@ export function buildMcpServer(database: JournalDatabase, actor: Agent): McpServ
       projectSlug: slug,
       limit: z.number().int().min(1).max(200).default(50),
       repository: z.string().min(3).max(300).optional(),
-      actor: z.enum(['codex', 'claude', 'human']).optional(),
+      actor: z.enum(agents).optional(),
     }),
     annotations: { readOnlyHint: true },
   }, async ({ projectSlug, limit, repository, actor: actorFilter }) => {
-    try { return result(database.getJournal(projectSlug, limit, repository, actorFilter)); } catch (error) { return failure(error); }
+    try { return result(await database.getJournal(projectSlug, limit, repository, actorFilter)); } catch (error) { return failure(error); }
   });
 
   return server;

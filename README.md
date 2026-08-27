@@ -1,6 +1,8 @@
 # Project Journal MCP
 
-A runnable first slice of the [implementation plan](./PLAN.md): a token-authenticated MCP server that stores project and pull-request notes in SQLite.
+A token-authenticated MCP server that stores project and pull-request notes, with a public read-only journal UI. It supports local SQLite/Docker operation and a serverless Postgres deployment on Vercel.
+
+For the hosted setup at `merge.turtlez.au`, including isolated Codex, Claude, and OpenCode credentials, follow the [Vercel deployment runbook](./docs/vercel-deployment.md).
 
 ## Start it
 
@@ -32,10 +34,10 @@ Configure an HTTP-capable MCP client with:
 - URL: `http://127.0.0.1:3000/mcp`
 - Header: `Authorization: Bearer local-codex-token`
 
-For two agents, set a comma-separated token map in `.env`:
+For multiple agents, set a comma-separated token map in `.env`:
 
 ```dotenv
-MCP_TOKENS=codex:a-long-random-codex-token,claude:a-long-random-claude-token
+MCP_TOKENS=codex:a-long-random-codex-token,claude:a-long-random-claude-token,opencode:a-long-random-opencode-token
 ```
 
 The authenticated credential determines message attribution; callers do not supply their own actor value.

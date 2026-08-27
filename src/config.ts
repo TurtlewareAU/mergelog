@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export type Agent = 'codex' | 'claude' | 'human';
+export const agents = ['codex', 'claude', 'opencode', 'human'] as const;
+export type Agent = typeof agents[number];
 
 export interface Config {
   host: string;
@@ -21,7 +22,7 @@ function parseTokens(value: string): Map<string, Agent> {
     }
     const agent = entry.slice(0, separator);
     const token = entry.slice(separator + 1);
-    if (!['codex', 'claude', 'human'].includes(agent)) {
+    if (!agents.includes(agent as Agent)) {
       throw new Error(`Unsupported MCP_TOKENS agent: ${agent}`);
     }
     if (token.length < 8) throw new Error('MCP tokens must be at least 8 characters');
