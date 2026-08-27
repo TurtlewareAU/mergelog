@@ -71,12 +71,13 @@ export class PostgresJournalStore implements JournalStore {
 
   async recordPrUpdate(input: PrUpdateInput, actor: Agent): Promise<object> {
     await this.migrate();
-    const existing = (await this.sql<Row[]>`SELECT operation, result_json FROM idempotency_keys WHERE client=${actor} AND key=${input.idempotencyKey}`)[0];
-    if (existing) {
-      if (existing.operation !== 'pr_update_record') throw new Error('idempotency key was already used for a different operation');
-      return { ...(existing.result_json as object), idempotentReplay: true };
-    }
     return this.sql.begin(async (sql) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${actor}:${input.idempotencyKey}`}, 0))`;
+      const existing = (await sql<Row[]>`SELECT operation, result_json FROM idempotency_keys WHERE client=${actor} AND key=${input.idempotencyKey}`)[0];
+      if (existing) {
+        if (existing.operation !== 'pr_update_record') throw new Error('idempotency key was already used for a different operation');
+        return { ...(existing.result_json as object), idempotentReplay: true };
+      }
       const repository = normalizeRepository(input.repository);
       const project = (await sql<Row[]>`SELECT id FROM projects WHERE lower(slug)=lower(${input.projectSlug})`)[0];
       if (!project) throw new Error(`unknown project: ${input.projectSlug}`);

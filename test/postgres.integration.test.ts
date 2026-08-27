@@ -12,7 +12,7 @@ test('PostgreSQL creates, records, and reads a journal entry', { skip: !connecti
   const repository = `turtlez/mergelog-test-${suffix}`;
   try {
     await store.createProject({ slug, name: `Integration ${suffix}`, repositories: [repository] }, 'codex');
-    const recorded = await store.recordPrUpdate({
+    const input = {
       projectSlug: slug,
       repository,
       prNumber: 1,
@@ -22,9 +22,16 @@ test('PostgreSQL creates, records, and reads a journal entry', { skip: !connecti
       decisions: ['Use PostgreSQL'],
       followUps: [],
       idempotencyKey: `integration-${randomUUID()}`,
-    }, 'opencode') as { messageId: string };
+    };
+    const [first, second] = await Promise.all([
+      store.recordPrUpdate(input, 'opencode'),
+      store.recordPrUpdate(input, 'opencode'),
+    ]) as Array<{ messageId: string; idempotentReplay?: boolean }>;
     const journal = await store.getJournal(slug, 10) as { entries: Array<{ message: { id: string; actor: string } }> };
-    assert.equal(journal.entries[0].message.id, recorded.messageId);
+    assert.equal(first.messageId, second.messageId);
+    assert.equal([first.idempotentReplay, second.idempotentReplay].filter(Boolean).length, 1);
+    assert.equal(journal.entries.length, 1);
+    assert.equal(journal.entries[0].message.id, first.messageId);
     assert.equal(journal.entries[0].message.actor, 'opencode');
   } finally {
     await store.close();

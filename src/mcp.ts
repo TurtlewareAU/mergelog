@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
-import type { Agent } from './config.js';
+import { agents, type Agent } from './config.js';
 import type { JournalStore } from './store.js';
 
 const slug = z.string().min(2).max(64).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -71,7 +71,7 @@ export function buildMcpServer(database: JournalStore, actor: Agent): McpServer 
       projectSlug: slug,
       limit: z.number().int().min(1).max(200).default(50),
       repository: z.string().min(3).max(300).optional(),
-      actor: z.enum(['codex', 'claude', 'opencode', 'human']).optional(),
+      actor: z.enum(agents).optional(),
     }),
     annotations: { readOnlyHint: true },
   }, async ({ projectSlug, limit, repository, actor: actorFilter }) => {
