@@ -21,7 +21,7 @@ function statusView(title, detail) {
 }
 
 async function loadJournal() {
-  app.innerHTML = statusView('Loading the journal…', 'Reading the latest project history from SQLite.');
+  app.innerHTML = statusView('Loading the journal…', 'Reading the latest project history.');
   try {
     const projectsResponse = await fetch('/api/projects');
     if (!projectsResponse.ok) throw new Error(`Projects request returned ${projectsResponse.status}`);

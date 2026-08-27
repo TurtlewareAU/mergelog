@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { hostHeaderValidation, originValidation, toNodeHandler } from '@modelcontextprotocol/node';
-import { loadConfig, type Agent } from './config.js';
+import { agents, loadConfig, type Agent } from './config.js';
 import { JournalDatabase } from './database.js';
 import { buildMcpServer } from './mcp.js';
 
@@ -90,7 +90,7 @@ const httpServer = createServer(async (request, response) => {
     try {
       const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 1), 200);
       const actor = url.searchParams.get('actor') as Agent | null;
-      if (actor && !['codex', 'claude', 'human'].includes(actor)) {
+      if (actor && !agents.includes(actor)) {
         json(response, 400, { error: 'invalid_actor' });
         return;
       }

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "vercel-build": "npm --prefix web install && npm --prefix web run build",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/src/index.js",
     "test": "node --import tsx --test test/**/*.test.ts",
@@ -14,6 +15,7 @@
     "@modelcontextprotocol/client": "2.0.0",
     "@modelcontextprotocol/node": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
+    "postgres": "^3.4.9",
     "zod": "^4.1.5"
   },
   "devDependencies": {
