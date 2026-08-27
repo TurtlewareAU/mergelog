@@ -33,6 +33,16 @@ test('PostgreSQL creates, records, and reads a journal entry', { skip: !connecti
     assert.equal(journal.entries.length, 1);
     assert.equal(journal.entries[0].message.id, first.messageId);
     assert.equal(journal.entries[0].message.actor, 'opencode');
+
+    const concurrentInput = { ...input, prNumber: 2, prUrl: `https://github.com/${repository}/pull/2` };
+    const [codexUpdate, claudeUpdate] = await Promise.all([
+      store.recordPrUpdate({ ...concurrentInput, idempotencyKey: `integration-${randomUUID()}` }, 'codex'),
+      store.recordPrUpdate({ ...concurrentInput, idempotencyKey: `integration-${randomUUID()}` }, 'claude'),
+    ]) as Array<{ messageId: string }>;
+    const journalAfterConcurrentUpdates = await store.getJournal(slug, 10) as { entries: Array<{ prNumber: number; message: { id: string } }> };
+    const concurrentEntries = journalAfterConcurrentUpdates.entries.filter((entry) => entry.prNumber === 2);
+    assert.equal(concurrentEntries.length, 2);
+    assert.deepEqual(new Set(concurrentEntries.map((entry) => entry.message.id)), new Set([codexUpdate.messageId, claudeUpdate.messageId]));
   } finally {
     await store.close();
   }

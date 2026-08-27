@@ -83,6 +83,7 @@ export class PostgresJournalStore implements JournalStore {
       if (!project) throw new Error(`unknown project: ${input.projectSlug}`);
       const repositoryRow = (await sql<Row[]>`SELECT id FROM repositories WHERE project_id=${project.id as string} AND lower(normalized_name)=lower(${repository})`)[0];
       if (!repositoryRow) throw new Error(`repository ${repository} is not attached to project ${input.projectSlug}`);
+      await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${repositoryRow.id as string}:${input.prNumber}`}, 0))`;
       const timestamp = now();
       const existingThread = (await sql<Row[]>`SELECT id FROM pr_threads WHERE repository_id=${repositoryRow.id as string} AND pr_number=${input.prNumber}`)[0];
       const threadId = existingThread?.id as string | undefined ?? randomUUID();
