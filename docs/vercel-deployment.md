@@ -6,7 +6,13 @@ The Vercel deployment serves the read-only journal UI at `https://merge.turtlez.
 
 Create a serverless Postgres database (Vercel Marketplace Postgres, Neon, or another PostgreSQL provider) in the same region as the Vercel function. Add its pooled connection string to the Vercel project as `POSTGRES_URL`. `DATABASE_URL` is also accepted.
 
-The application creates its schema on the first request. The database user therefore needs schema creation rights for the first deployment and normal read/write rights afterward.
+The application creates its schema on the first database-backed request. A PostgreSQL advisory lock makes concurrent cold starts safe. The database user therefore needs schema creation rights as well as normal read/write rights.
+
+Before production, run the PostgreSQL integration test against the database (it creates one uniquely named test project):
+
+```sh
+TEST_POSTGRES_URL='postgres://...' npm run test:postgres
+```
 
 ## 2. Generate client credentials
 
@@ -36,11 +42,12 @@ Verify the public and protected surfaces:
 
 ```sh
 curl -i https://merge.turtlez.au/healthz
+curl -i https://merge.turtlez.au/readyz
 curl -i https://merge.turtlez.au/api/projects
 curl -i https://merge.turtlez.au/mcp
 ```
 
-The first two should return `200`; the unauthenticated MCP request should return `401`.
+The first three should return `200`; the unauthenticated MCP request should return `401`. `/healthz` confirms the function is running, while `/readyz` also verifies the database connection and schema.
 
 ## 4. Configure MCP clients
 

@@ -15,9 +15,24 @@ export class PostgresJournalStore implements JournalStore {
     this.sql = postgres(connectionString, { max: 3, prepare: false, idle_timeout: 20 });
   }
 
+  async close(): Promise<void> {
+    await this.sql.end({ timeout: 5 });
+  }
+
   private migrate(): Promise<void> {
-    return this.migrated ??= (async () => {
-      await this.sql.unsafe(`
+    if (!this.migrated) {
+      this.migrated = this.runMigrations().catch((error) => {
+        this.migrated = undefined;
+        throw error;
+      });
+    }
+    return this.migrated;
+  }
+
+  private async runMigrations(): Promise<void> {
+    await this.sql.begin(async (sql) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtext('mergelog-schema-v1'))`;
+      await sql.unsafe(`
         CREATE TABLE IF NOT EXISTS projects (id text PRIMARY KEY, slug text NOT NULL UNIQUE, name text NOT NULL, created_by text NOT NULL, created_at timestamptz NOT NULL);
         CREATE TABLE IF NOT EXISTS repositories (id text PRIMARY KEY, project_id text NOT NULL REFERENCES projects(id) ON DELETE CASCADE, provider text NOT NULL DEFAULT 'github', normalized_name text NOT NULL UNIQUE, created_at timestamptz NOT NULL);
         CREATE TABLE IF NOT EXISTS pr_threads (id text PRIMARY KEY, project_id text NOT NULL REFERENCES projects(id), repository_id text NOT NULL REFERENCES repositories(id), pr_number integer NOT NULL, pr_url text NOT NULL, title text NOT NULL, merge_sha text, merged_at timestamptz, merge_status text NOT NULL DEFAULT 'reported', created_at timestamptz NOT NULL, updated_at timestamptz NOT NULL, UNIQUE(repository_id, pr_number));
@@ -28,7 +43,7 @@ export class PostgresJournalStore implements JournalStore {
         CREATE INDEX IF NOT EXISTS idx_threads_project_updated ON pr_threads(project_id, updated_at DESC);
         CREATE INDEX IF NOT EXISTS idx_messages_thread_created ON messages(thread_id, created_at);
       `);
-    })();
+    });
   }
 
   private async audit(sql: any, actor: Agent, action: string, entityType: string, entityId: string, detail: unknown): Promise<void> {

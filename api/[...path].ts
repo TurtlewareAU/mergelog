@@ -41,10 +41,19 @@ const mcp = createMcpHandler(({ requestInfo }) => {
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
 
-export default async function handler(request: Request): Promise<Response> {
+async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const pathname = url.pathname.replace(/^\/api(?=\/|$)/, '');
   if (pathname === '/healthz') return json({ status: 'ok' });
+  if (pathname === '/readyz') {
+    try {
+      await store.listProjects();
+      return json({ status: 'ready', database: 'connected' });
+    } catch (error) {
+      console.error(JSON.stringify({ level: 'error', message: 'database readiness check failed', error: error instanceof Error ? error.message : String(error) }));
+      return json({ status: 'not_ready', database: 'unavailable' }, 503);
+    }
+  }
 
   if (request.method === 'GET' && pathname === '/projects') return json({ projects: await store.listProjects() });
   const journal = request.method === 'GET' && pathname.match(/^\/projects\/([^/]+)\/journal$/);
@@ -67,3 +76,5 @@ export default async function handler(request: Request): Promise<Response> {
   if (origin && !allowedOrigins.includes(origin)) return json({ error: 'forbidden_origin' }, 403);
   return mcp.fetch(request);
 }
+
+export default { fetch: handler };
