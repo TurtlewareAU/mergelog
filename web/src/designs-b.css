@@ -8,12 +8,12 @@
 .strata-rail{background:#242a3e;border-right:1px solid rgba(255,255,255,.07);padding:34px 24px;display:flex;flex-direction:column;gap:34px}
 .rail-label{font:10px 'DM Mono';letter-spacing:.19em;color:#8a90ad;display:block;margin-bottom:14px}
 .project-list,.repo-list,.actor-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
-.project-list a{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 11px;border-radius:7px;color:#b9bed4;text-decoration:none}
+.project-list a{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:9px 11px;border-radius:7px;color:#b9bed4;text-decoration:none}
 .project-list a:hover{background:rgba(255,255,255,.05);color:#e4e6f2}
 .project-list a:focus-visible{outline:2px solid #ff8a6b;outline-offset:2px}
 .project-list li.on a{background:rgba(255,138,107,.13);color:#ffb59e;box-shadow:inset 2px 0 0 #ff8a6b}
-.project-list span{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
-.project-list small{grid-column:1;font:10px 'DM Mono';color:#8a90ad;overflow:hidden;text-overflow:ellipsis}
+.project-list span{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.project-list small{grid-column:1;font:10px 'DM Mono';color:#8a90ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .project-list b{grid-column:2;grid-row:1 / span 2;align-self:center;font:11px 'DM Mono';color:#8a90ad}
 .repo-list li{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-radius:7px;font-size:13px;color:#b9bed4;font-family:'DM Mono'}
 .repo-list li.on{background:rgba(255,138,107,.13);color:#ffb59e;box-shadow:inset 2px 0 0 #ff8a6b}
