@@ -19,7 +19,7 @@ concurrency:
 jobs:
   mirror:
     name: Mirror branches and tags
-    runs-on: [self-hosted, Linux, X64, pve]
+    runs-on: ubuntu-latest
     steps:
       - name: Validate mirror configuration
         env:

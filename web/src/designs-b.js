@@ -63,6 +63,8 @@ export function designFour(nav, data) {
     grouped.set(key, current);
   }
   const displayThreads = [...grouped.values()];
+  const projects = data?.projects ?? [];
+  const activeProjectSlug = journal?.project?.slug;
   const repositories = [...new Set((journal?.project?.repositories ?? data?.projects?.flatMap((p) => p.repositories) ?? displayThreads.map((t) => t.repository)))];
   const repos = repositories.map((repo, index) => [repo, displayThreads.filter((t) => t.repository === repo).length, index === 0]);
   const actorCounts = { codex: 0, claude: 0, opencode: 0, human: 0 };
@@ -74,6 +76,10 @@ export function designFour(nav, data) {
   return `<main class="design design-four">${nav}
   <div class="strata-shell">
     <aside class="strata-rail">
+      <div class="rail-block">
+        <span class="rail-label">PROJECTS</span>
+        <ul class="project-list">${projects.map((project) => { const active = project.slug === activeProjectSlug; return `<li class="${active ? 'on' : ''}"><a href="?project=${encodeURIComponent(project.slug)}"${active ? ' aria-current="page"' : ''}><span>${escapeHtml(project.name)}</span><small>${escapeHtml(project.slug)}</small><b aria-label="${escapeHtml(project.repositories?.length ?? 0)} repositories">${escapeHtml(project.repositories?.length ?? 0)}</b></a></li>`; }).join('') || '<li class="on"><span>No projects</span></li>'}</ul>
+      </div>
       <div class="rail-block">
         <span class="rail-label">REPOSITORIES</span>
         <ul class="repo-list">${repos.map(([r, n, on]) => `<li class="${on ? 'on' : ''}"><span>${escapeHtml(r)}</span><b>${escapeHtml(n)}</b></li>`).join('') || '<li class="on"><span>No repositories</span><b>0</b></li>'}</ul>
@@ -97,7 +103,7 @@ export function designFour(nav, data) {
     <section class="strata-main">
       <header class="strata-head">
         <div>
-          <span class="rail-label">PROJECT JOURNAL</span>
+          <span class="rail-label">${escapeHtml(journal?.project?.name ?? 'PROJECT JOURNAL')}</span>
           <h1>Merged work, <em>kept in context.</em></h1>
         </div>
         <div class="strata-actions">

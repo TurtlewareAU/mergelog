@@ -1,6 +1,6 @@
 # Vercel deployment
 
-The Vercel deployment serves the read-only journal UI at `https://merge.turtlez.au`, public read-only JSON under `/api`, and the authenticated Streamable HTTP MCP endpoint at `/mcp`.
+The Vercel deployment serves the read-only journal UI at `https://mergelog.turtlez.au`, public read-only JSON under `/api`, and the authenticated Streamable HTTP MCP endpoint at `/mcp`.
 
 ## 1. Create persistent storage
 
@@ -27,35 +27,35 @@ printf 'opencode:'; openssl rand -hex 32
 Join the resulting `agent:token` values with commas and add them as the encrypted Vercel environment variable `MCP_TOKENS`. Tokens must be at least 32 characters on Vercel. Also set:
 
 ```dotenv
-ALLOWED_ORIGINS=https://merge.turtlez.au
+ALLOWED_ORIGINS=https://mergelog.turtlez.au
 ```
 
 Rotate one client without affecting the others by replacing its value and redeploying. Historical entries retain their actor attribution.
 
 ## 3. Deploy and attach the domain
 
-Import this repository into Vercel and deploy the `feat/vercel-hosted-mcp` branch. The committed `vercel.json` builds the Vite UI and deploys the API function.
+Import this repository into Vercel and deploy the `main` branch. The committed `vercel.json` builds the Vite UI and deploys the API function.
 
-In Vercel, open **Project → Settings → Domains**, add `merge.turtlez.au`, and apply the DNS record Vercel provides at the authoritative DNS provider for `turtlez.au`. Keep the production branch setting on this branch until it is merged, then change it to `main`.
+In Vercel, open **Project → Settings → Domains**, add `mergelog.turtlez.au`, and apply the DNS record Vercel provides at the authoritative DNS provider for `turtlez.au`. Keep the production branch set to `main`.
 
 Verify the public and protected surfaces:
 
 ```sh
-curl -i https://merge.turtlez.au/healthz
-curl -i https://merge.turtlez.au/readyz
-curl -i https://merge.turtlez.au/api/projects
-curl -i https://merge.turtlez.au/mcp
+curl -i https://mergelog.turtlez.au/healthz
+curl -i https://mergelog.turtlez.au/readyz
+curl -i https://mergelog.turtlez.au/api/projects
+curl -i https://mergelog.turtlez.au/mcp
 ```
 
 The first three should return `200`; the unauthenticated MCP request should return `401`. `/healthz` confirms the function is running, while `/readyz` also verifies the database connection and schema.
 
 ## 4. Configure MCP clients
 
-Use `https://merge.turtlez.au/mcp` as a remote/Streamable HTTP MCP server and send the token assigned to that client:
+Use `https://mergelog.turtlez.au/mcp` as a remote/Streamable HTTP MCP server and send the token assigned to that client:
 
 ```json
 {
-  "url": "https://merge.turtlez.au/mcp",
+  "url": "https://mergelog.turtlez.au/mcp",
   "headers": {
     "Authorization": "Bearer <client-specific-token>"
   }
