@@ -55,19 +55,20 @@ async function handler(request: Request): Promise<Response> {
     }
   }
 
-  if (request.method === 'GET' && pathname === '/projects') return json({ projects: await store.listProjects() });
-  const journal = request.method === 'GET' && pathname.match(/^\/projects\/([^/]+)\/journal$/);
-  if (journal) {
+  const journalPathMatch = pathname.match(/^\/projects\/([^/]+)\/journal$/);
+  const journalSlug = request.method === 'GET' ? journalPathMatch?.[1] ?? url.searchParams.get('journalSlug') : null;
+  if (journalSlug) {
     const actor = url.searchParams.get('actor') as Agent | null;
     if (actor && !agents.includes(actor)) return json({ error: 'invalid_actor' }, 400);
     const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 1), 200);
     try {
-      return json(await store.getJournal(decodeURIComponent(journal[1]), limit, url.searchParams.get('repository') ?? undefined, actor ?? undefined));
+      return json(await store.getJournal(decodeURIComponent(journalSlug), limit, url.searchParams.get('repository') ?? undefined, actor ?? undefined));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to read journal';
       return json({ error: 'journal_read_failed', message }, message.startsWith('unknown project:') ? 404 : 400);
     }
   }
+  if (request.method === 'GET' && pathname === '/projects') return json({ projects: await store.listProjects() });
 
   if (pathname !== '/mcp') return json({ error: 'not_found' }, 404);
   if (!actorFor(request)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'content-type': 'application/json', 'www-authenticate': 'Bearer' } });
