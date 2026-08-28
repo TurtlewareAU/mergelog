@@ -6,6 +6,7 @@
     "api/**/*.ts": { "maxDuration": 30 }
   },
   "rewrites": [
+    { "source": "/api/projects/:slug/journal", "destination": "/api/projects?journalSlug=:slug" },
     { "source": "/mcp", "destination": "/api/mcp" },
     { "source": "/healthz", "destination": "/api/healthz" },
     { "source": "/readyz", "destination": "/api/readyz" }
