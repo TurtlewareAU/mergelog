@@ -2,7 +2,7 @@
 
 A token-authenticated MCP server that stores project and pull-request notes, with a public read-only journal UI. It supports local SQLite/Docker operation and a serverless Postgres deployment on Vercel.
 
-For the hosted setup at `merge.turtlez.au`, including isolated Codex, Claude, and OpenCode credentials, follow the [Vercel deployment runbook](./docs/vercel-deployment.md).
+For the hosted setup at `mergelog.turtlez.au`, including isolated Codex, Claude, and OpenCode credentials, follow the [Vercel deployment runbook](./docs/vercel-deployment.md).
 
 ## Start it
 
@@ -16,7 +16,7 @@ curl http://127.0.0.1:3000/healthz
 
 Open the read-only Strata journal at `http://127.0.0.1:3000/`. The local default MCP endpoint is `http://127.0.0.1:3000/mcp` and its development bearer token is `local-codex-token`. Copy `.env.example` to `.env`, replace the credentials, and add the LAN hostname or IP you will use to `ALLOWED_HOSTS` before exposing the service beyond your machine.
 
-For a production Swarm deployment behind Traefik, follow the [production deployment runbook](./deploy/README.md). It uses versioned Docker Hub images, local SQLite storage pinned to one node, and a Docker secret for MCP credentials.
+Production is deployed through Vercel. Docker Compose remains available for local development and testing only.
 
 Run the included end-to-end client against the container:
 
@@ -92,4 +92,4 @@ Configuration:
 
 ## Current scope
 
-This working copy implements storage, the initial MCP contract, the read-only timeline UI, and a production Swarm deployment path. Deterministic Markdown export, scheduled validated backups, and NFS retention remain later phases from the plan.
+This working copy implements storage, the initial MCP contract, the read-only timeline UI, and a serverless Vercel deployment path. Deterministic Markdown export remains a later phase from the plan.

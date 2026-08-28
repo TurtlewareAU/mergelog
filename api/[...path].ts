@@ -34,7 +34,7 @@ function actorFor(request: Request): Agent | undefined {
 
 const mcp = createMcpHandler(({ requestInfo }) => {
   const authorization = requestInfo?.headers.get('authorization');
-  const actor = authorization ? actorFor(new Request('https://merge.turtlez.au/mcp', { headers: { authorization } })) : undefined;
+  const actor = authorization ? actorFor(new Request('https://mergelog.turtlez.au/mcp', { headers: { authorization } })) : undefined;
   if (!actor) throw new Error('Authenticated actor was not available to MCP handler');
   return buildMcpServer(store, actor);
 }, { onerror: (error) => console.error(JSON.stringify({ level: 'error', message: error.message })) });
@@ -73,7 +73,7 @@ async function handler(request: Request): Promise<Response> {
   if (pathname !== '/mcp') return json({ error: 'not_found' }, 404);
   if (!actorFor(request)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'content-type': 'application/json', 'www-authenticate': 'Bearer' } });
   const origin = request.headers.get('origin');
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'https://merge.turtlez.au').split(',').map((value) => value.trim());
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'https://mergelog.turtlez.au').split(',').map((value) => value.trim());
   if (origin && !allowedOrigins.includes(origin)) return json({ error: 'forbidden_origin' }, 403);
   return mcp.fetch(request);
 }
